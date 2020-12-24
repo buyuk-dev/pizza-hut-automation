@@ -2,3 +2,6 @@ __pycache__
 config.py
 *.swp
 *.pyc
+*.png
+git_rsa
+git_rsa.pub
