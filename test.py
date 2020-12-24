@@ -1,10 +1,12 @@
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 import time
+import argparse
 
 
 def find_element_by_text(driver, text, elem="button", root="//"):
@@ -147,26 +149,55 @@ def make_payment(driver, card_nr, card_date, card_cvv, card_name):
     #driver.find_element_by_xpath('//input[type="submit"]').submit()
 
 
-def main(driver):    
-    from config import *
+from config import *
+def main(driver):
     try:
+        print("login...")
         pizza_hut_login(driver, *CREDENTIALS)
+
+        print("find location...")
         find_pizza_hut_location(driver, ADDRESS[0])
+
+        print("ignore extended delivery time...")
         ignore_extended_delivery_time_popup(driver)
+
+        print("ignore closed restaurant...")
         ignore_closed_restaurant_popup(driver)
+
+        print("open pizza menu...")
         navigate_to_pizza_menu(driver)
+
+        print("select pizza...")
         add_pizza_to_cart(driver, PIZZA_NAME)
+
+        print("order current cart...")
         order_current_cart(driver)
+
+        print("ignore limited time offer...")
         ignore_limited_time_offer_popup(driver)
+
+        print("fill in order details...")
         fill_in_order_details(driver, FIRST_NAME, EMAIL, PHONE, ADDRESS[1])
+
+        print("make payment...")
         make_payment(driver, CARD_NUMBER, CARD_DATE, CARD_CVV, CARD_FULL_NAME)
+
     except:
         driver.save_screenshot("error.png")
         raise
 
 
 if __name__ == '__main__':
-    with webdriver.Chrome() as driver:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--headless", action="store_true")
+    args = parser.parse_args()
+
+    options = Options()
+    if args.headless:
+        options.add_argument("--headless")
+        options.add_argument("--disable-gpu")
+
+    with webdriver.Chrome(chrome_options=options) as driver:
         driver.get("https://pizzahut.pl/en")
         assert "Pizza Hut" in driver.title
         time.sleep(10)
