@@ -1,9 +1,12 @@
+#! /usr/bin/env python
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
 
 import time
 import argparse
@@ -14,10 +17,13 @@ def find_element_by_text(driver, text, elem="button", root="//"):
 
 
 def pizza_hut_login(driver, username, password):
+    """ Preconditions:
+        1. Home page fully loaded. Log in button clickable.
+    """
     login_btn = find_element_by_text(driver, "Log in")
     login_btn.click()
-
-    time.sleep(10)
+    
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.NAME, "password")))
 
     email_txt = driver.find_element_by_name('email')
     email_txt.clear()
@@ -27,20 +33,24 @@ def pizza_hut_login(driver, username, password):
     passwd_txt.clear()
     passwd_txt.send_keys(password)
     passwd_txt.send_keys(Keys.RETURN)
-
-    time.sleep(10)
    
 
 def find_pizza_hut_location(driver, address):
+    """ Preconditions:
+        1. Location search-input loaded within 10 seconds.
+    """
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "search-input")))
     address_txt = driver.find_element_by_id("search-input")
     address_txt.send_keys(address)
 
+    # TODO: Rewrite using wait until first hint is visible and selected.
+    # WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "search-input--list")))
     time.sleep(5)
-
     address_txt.send_keys(Keys.RETURN)
     
-    time.sleep(10)
-
+    WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.XPATH, '//button[text()="Begin your order"]'))
+    )
     begin_order_btn = find_element_by_text(driver, "Begin your order")
     begin_order_btn.click()
 
@@ -64,6 +74,15 @@ def ignore_closed_restaurant_popup(driver):
     except Exception as e:
         print("Closed restaurant popup not found")
         print(e)
+
+
+def handle_restaurant_closed_popup(driver):
+    try:
+        closed_msg = find_element_by_text(driver, "Restaurant is now closed", elem="h4")
+    except NoSuchElementException as e:
+        time.sleep(10)
+        return # restaurant looks open
+    raise Exception("Restaurant is now closed. Try again later.")
 
 
 def navigate_to_pizza_menu(driver):
@@ -158,6 +177,9 @@ def main(driver):
         print("find location...")
         find_pizza_hut_location(driver, ADDRESS[0])
 
+        print("checking if restaurant is open...")
+        handle_restaurant_closed_popup(driver)
+
         print("ignore extended delivery time...")
         ignore_extended_delivery_time_popup(driver)
 
@@ -200,6 +222,5 @@ if __name__ == '__main__':
     with webdriver.Chrome(chrome_options=options) as driver:
         driver.get("https://pizzahut.pl/en")
         assert "Pizza Hut" in driver.title
-        time.sleep(10)
         main(driver)
 
