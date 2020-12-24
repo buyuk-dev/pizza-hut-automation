@@ -216,6 +216,8 @@ if __name__ == '__main__':
 
     options = Options()
     if args.headless:
+        options.add_argument("--no-sandbox")
+        options.add_argument("--window-size=1420,1080")
         options.add_argument("--headless")
         options.add_argument("--disable-gpu")
 
