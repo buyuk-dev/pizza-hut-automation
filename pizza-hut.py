@@ -66,6 +66,15 @@ def ignore_extended_delivery_time_popup(driver):
         print("Extended delivery time popup not found")
 
 
+def check_if_delivery_to_address_is_possible(driver):
+    try:
+        closed_msg = find_element_by_text(driver, "WE ARE SORRY, BUT WE CANNOT DELIVER TO THIS ADDRESS", elem="h4")
+    except NoSuchElementException as e:
+        time.sleep(10)
+        return # Looks like delivery is possible
+    raise Exception("Delivery to selected address not possible.")
+
+
 def ignore_closed_restaurant_popup(driver):
     try:
         ill_order_btn = find_element_by_text(driver, "I'll order")
@@ -179,6 +188,9 @@ def main(driver):
 
         print("checking if restaurant is open...")
         handle_restaurant_closed_popup(driver)
+
+        print("checking if delivery is possible...")
+        check_if_delivery_to_address_is_possible(driver)
 
         print("ignore extended delivery time...")
         ignore_extended_delivery_time_popup(driver)
