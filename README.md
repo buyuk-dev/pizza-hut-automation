@@ -20,3 +20,24 @@
     pipenv run python pizza-hut.py [--headless]
 
 
+# Running using Docker
+
+## Build container
+
+    docker build -t pizzahut:latest .
+
+## Run container
+
+    docker run -it pizzahut
+
+## Get screenshot in case of error
+
+    # get container id
+    docker ps -a | grep pizzahut | head -1 | cut -d' ' -f 1
+
+    # copy screenshot from the container
+    docker cp <CONTAINER_ID>::/usr/src/app/christmass-pizza/error.png ./error.png
+
+    # open screenshot
+    xdg-open ./error.png
+
