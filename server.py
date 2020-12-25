@@ -12,10 +12,13 @@ client = docker.from_env()
 
 class PizzaOrder(Resource):
     def get(self):
+        print("PizzaOrder - Start")
         try:
             client.containers.run("pizzahut:latest")
+            print("PizzaOrder - Success")
             return {'status': 'order successful'}
         except Exception as e:
+            print("PizzaOrder - Failure")
             return {'error': str(e)}
 
 

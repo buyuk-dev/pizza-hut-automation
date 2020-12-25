@@ -177,7 +177,6 @@ def make_payment(driver, card_nr, card_date, card_cvv, card_name):
     #driver.find_element_by_xpath('//input[type="submit"]').submit()
 
 
-from config import *
 def main(driver):
     try:
         print("login...")
@@ -221,11 +220,54 @@ def main(driver):
         raise
 
 
+from config import *
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--headless", action="store_true")
+    parser.add_argument("--address")
+    parser.add_argument("--email")
+    parser.add_argument("--user")
+    parser.add_argument("--password")
+    parser.add_argument("--pizza")
+    parser.add_argument("--name")
+    parser.add_argument("--card-number")
+    parser.add_argument("--card-date")
+    parser.add_argument("--card-cvv")
+    parser.add_argument("--card-owner")
     args = parser.parse_args()
 
+    # Parse command line options to replace defaults from config.py file
+    if args.address is not None:
+        ADDRESS = args.address.split("/")
+
+    if args.email is not None:
+        EMAIL = args.email
+
+    if args.user is not None:
+        CREDENTIALS[0] = args.user
+
+    if args.password is not None:
+        CREDENTIALS[1] = args.password
+
+    if args.pizza is not None:
+        PIZZA_NAME = args.pizza
+
+    if args.name is not None:
+        FIRST_NAME = args.name
+
+    if args.card_number is not None:
+        CARD_NUMBER = args.card_number
+
+    if args.card_date is not None:
+        CARD_DATE = args.card_date
+
+    if args.card_cvv is not None:
+        CARD_CVV = args.card_cvv
+
+    if args.card_owner is not None:
+        CARD_FULL_NAME = args.card_owner
+
+    # Settings required to run headless chrome under docker
     options = Options()
     if args.headless:
         options.add_argument("--no-sandbox")
@@ -233,6 +275,7 @@ if __name__ == '__main__':
         options.add_argument("--headless")
         options.add_argument("--disable-gpu")
 
+    # Run the script
     with webdriver.Chrome(chrome_options=options) as driver:
         driver.get("https://pizzahut.pl/en")
         assert "Pizza Hut" in driver.title
