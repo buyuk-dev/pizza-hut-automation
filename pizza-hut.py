@@ -11,6 +11,8 @@ from selenium.common.exceptions import NoSuchElementException
 import time
 import argparse
 
+import config
+
 
 def find_element_by_text(driver, text, elem="button", root="//"):
     return driver.find_element_by_xpath(f'{root}{elem}[text()="{text}"]')
@@ -104,8 +106,10 @@ def add_pizza_to_cart(driver, pizza_name):
     pizza_menu = driver.find_element_by_id("pizzas")
     pizza_title = find_element_by_text(pizza_menu, pizza_name, "span")
     pizza = pizza_title.find_element_by_xpath('..')
-    add_btn = pizza.find_element_by_tag_name("button")
+    price_tag = pizza.find_element_by_tag_name("h4").get_attribute("innerHTML")
+    print(f"Selected pizza cost is {price_tag}")
 
+    add_btn = pizza.find_element_by_tag_name("button")
     driver.execute_script('arguments[0].scrollIntoView(true);', add_btn)
     driver.execute_script("arguments[0].click();", add_btn)
     time.sleep(10)
@@ -177,13 +181,12 @@ def make_payment(driver, card_nr, card_date, card_cvv, card_name):
     #driver.find_element_by_xpath('//input[type="submit"]').submit()
 
 
-def main(driver):
-    try:
+def place_order(driver, config):
         print("login...")
-        pizza_hut_login(driver, *CREDENTIALS)
+        pizza_hut_login(driver, config.username, config.password)
 
         print("find location...")
-        find_pizza_hut_location(driver, ADDRESS[0])
+        find_pizza_hut_location(driver, config.address)
 
         print("checking if restaurant is open...")
         handle_restaurant_closed_popup(driver)
@@ -201,7 +204,7 @@ def main(driver):
         navigate_to_pizza_menu(driver)
 
         print("select pizza...")
-        add_pizza_to_cart(driver, PIZZA_NAME)
+        add_pizza_to_cart(driver, config.pizza)
 
         print("order current cart...")
         order_current_cart(driver)
@@ -210,17 +213,37 @@ def main(driver):
         ignore_limited_time_offer_popup(driver)
 
         print("fill in order details...")
-        fill_in_order_details(driver, FIRST_NAME, EMAIL, PHONE, ADDRESS[1])
+        apartment = config.address.split("/")[1]
+        fill_in_order_details(driver, config.name, config.email, config.phone, apartment)
 
         print("make payment...")
-        make_payment(driver, CARD_NUMBER, CARD_DATE, CARD_CVV, CARD_FULL_NAME)
-
-    except:
-        driver.save_screenshot("error.png")
-        raise
+        make_payment(driver, config.card_number, config.card_date, config.card_cvv, config.card_owner)
 
 
-from config import *
+def get_chrome_options(headless=False):
+    """ Settings required to run headless chrome under docker
+    """
+    options = Options()
+    if headless:
+        options.add_argument("--no-sandbox")
+        options.add_argument("--window-size=1420,1080")
+        options.add_argument("--headless")
+        options.add_argument("--disable-gpu")
+    return options
+
+
+def main(config, headless=False):
+    options = get_chrome_options(headless)
+    with webdriver.Chrome(chrome_options=options) as driver:
+        try:
+            driver.get("https://pizzahut.pl/en")
+            place_order(driver, config)
+            assert "Pizza Hut" in driver.title
+        except:
+            driver.save_screenshot("error.png")
+            raise
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--headless", action="store_true")
@@ -238,46 +261,33 @@ if __name__ == '__main__':
 
     # Parse command line options to replace defaults from config.py file
     if args.address is not None:
-        ADDRESS = args.address.split("/")
+        config.address = args.address
 
     if args.email is not None:
-        EMAIL = args.email
+        config.email = args.email
 
     if args.user is not None:
-        CREDENTIALS[0] = args.user
+        config.username = args.user
 
     if args.password is not None:
-        CREDENTIALS[1] = args.password
+        config.password = args.password
 
     if args.pizza is not None:
-        PIZZA_NAME = args.pizza
+        config.pizza = args.pizza
 
     if args.name is not None:
-        FIRST_NAME = args.name
+        config.name = args.name
 
     if args.card_number is not None:
-        CARD_NUMBER = args.card_number
+        config.card_number = args.card_number
 
     if args.card_date is not None:
-        CARD_DATE = args.card_date
+        config.card_date = args.card_date
 
     if args.card_cvv is not None:
-        CARD_CVV = args.card_cvv
+        config.card_cvv = args.card_cvv
 
     if args.card_owner is not None:
-        CARD_FULL_NAME = args.card_owner
+        config.card_owner = args.card_owner
 
-    # Settings required to run headless chrome under docker
-    options = Options()
-    if args.headless:
-        options.add_argument("--no-sandbox")
-        options.add_argument("--window-size=1420,1080")
-        options.add_argument("--headless")
-        options.add_argument("--disable-gpu")
-
-    # Run the script
-    with webdriver.Chrome(chrome_options=options) as driver:
-        driver.get("https://pizzahut.pl/en")
-        assert "Pizza Hut" in driver.title
-        main(driver)
-
+    main(config, args.headless)
