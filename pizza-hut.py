@@ -177,8 +177,10 @@ def make_payment(driver, card_nr, card_date, card_cvv, card_name):
     name_txt.clear()
     name_txt.send_keys(card_name)
 
-    #Make sure everything works and you're ready for testing before uncommenting submit.
-    #driver.find_element_by_xpath('//input[type="submit"]').submit()
+    submit_btn = driver.find_element_by_name("submit")
+    #driver.execute_script("arguments[0].click();", submit_btn)
+
+    time.sleep(30)
 
 
 def place_order(driver, config):
